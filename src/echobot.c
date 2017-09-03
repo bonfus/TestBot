@@ -1040,7 +1040,7 @@ int main(int argc, char *argv[])
 		g_tox = tox_new(&options, &err);
 		save_profile(g_tox);
 	}
-
+        tox_options_set_log_callback(&options, print_log);
 	tox_callback_self_connection_status(g_tox, self_connection_status);
 	tox_callback_friend_request(g_tox, friend_request);
 	tox_callback_friend_message(g_tox, friend_message);
@@ -1051,7 +1051,7 @@ int main(int argc, char *argv[])
     tox_callback_file_recv_control(g_tox,file_recv_control);
     tox_callback_file_chunk_request(g_tox, file_chunk_request);
     
-    tox_callback_log(g_tox, print_log, NULL);
+    // tox_callback_log(g_tox, print_log, NULL);
 
 	if (err != TOX_ERR_NEW_OK) {
 		printf("Error at tox_new, error: %d\n", err);
