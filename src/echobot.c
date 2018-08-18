@@ -25,14 +25,12 @@ static uint64_t start_time;
 static bool signal_exit = false;
 static bool is_connected = false;
 
-static const int32_t audio_bitrate = 8;
-static const int32_t video_bitrate = 500;
+static const int32_t audio_bitrate = 48;
+static const int32_t video_bitrate = 5000;
 static const char *data_filename = "data";
 
 static Tox *g_tox = NULL;
 static ToxAV *g_toxAV = NULL;
-
-
 
 // data packets
 pthread_mutex_t data_packets_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -494,7 +492,7 @@ static void *run_tox(void *arg)
 	return NULL;
 }
 
-/* ssssshhh I stole this from ToxBot, don't tell anyone.. */
+/* taken from ToxBot */
 static void get_elapsed_time_str(char *buf, int bufsize, uint64_t secs)
 {
 	long unsigned int minutes = (secs % 3600) / 60;
@@ -606,60 +604,7 @@ void custom_lossy_friend_message(Tox *tox, uint32_t friend_number, const uint8_t
     f->data_packets_cached_bytes += length;
     DL_APPEND(f->data_packets, pkt);
     
-    return;    
-    
-    //TOX_ERR_FRIEND_CUSTOM_PACKET error;
-    //
-    //int i;
-    //int try = 0;
-    //bool rv = false;
-    //bool from_queue = false;
-    //
-    //uint8_t * temp = malloc(sizeof(uint8_t)*length);
-    //if (temp == NULL) // so very bad!
-    //    return;    
-    //memcpy(temp, data, sizeof(uint8_t)*length);
-    //
-    //if (utarray_len(data_packets) > 0) {
-    //    utarray_push_back(data_packets,&temp);
-    //    temp = *(utarray_front(data_packets));
-    //    from_queue = true;
-    //}
-    //
-    //rv = tox_friend_send_lossy_packet(tox, friend_number, temp, length,
-    //                                &error);
-    //
-    //if(error == TOX_ERR_FRIEND_CUSTOM_PACKET_OK)
-    //{
-    //    free(temp)
-    //    if (from_queue == true) {
-    //        utarray_erase(data_packets,0,1)
-    //    }
-    //    return;
-    //}
-    //else
-    //{
-    //    /* If this branch is ran, most likely we've hit congestion control. */
-    //    if(error == TOX_ERR_FRIEND_CUSTOM_PACKET_SENDQ)
-    //    {
-    //        printf("[%d] Failed to send packet to friend %d (Packet queue is full)\n", i, 0);
-    //    }
-    //    else if(error == TOX_ERR_FRIEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED)
-    //    {
-    //        printf("[%d] Failed to send packet to friend %d (Friend gone)\n", i, 0);
-    //        break;
-    //    }
-    //    else
-    //    {
-    //        printf("[%d] Failed to send packet to friend %d (err: %u)\n", i, 0, error);
-    //        if (error == TOX_ERR_FRIEND_CUSTOM_PACKET_TOO_LONG)
-    //            printf("Too long\n");
-    //    }
-    //    if (from_queue == false) {
-    //        utarray_push_back(data_packets,&temp);
-    //    }
-    //}
-
+    return;
 }
 
 
@@ -689,64 +634,6 @@ void custom_lossless_friend_message(Tox *tox, uint32_t friend_number, const uint
     DL_APPEND(f->data_packets, pkt);
     
     return;
-    
-    //for(i = 0; i < 65;) /* 1.27 seconds per packet max */
-    //{
-    //    int j;
-    //    try++;
-    //
-    //    rv = tox_friend_send_lossless_packet(tox, friend_number, data, length,
-    //                                 &error);
-    //
-    //    if(error == TOX_ERR_FRIEND_CUSTOM_PACKET_OK)
-    //    {
-    //        break;
-    //    }
-    //    else
-    //    {
-    //        /* If this branch is ran, most likely we've hit congestion control. */
-    //        if(error == TOX_ERR_FRIEND_CUSTOM_PACKET_SENDQ)
-    //        {
-    //            printf("[%d] Failed to send packet to friend %d (Packet queue is full)\n", i, 0);
-    //        }
-    //        else if(error == TOX_ERR_FRIEND_CUSTOM_PACKET_FRIEND_NOT_CONNECTED)
-    //        {
-    //            printf("[%d] Failed to send packet to friend %d (Friend gone)\n", i, 0);
-    //            break;
-    //        }
-    //        else
-    //        {
-    //            printf("[%d] Failed to send packet to friend %d (err: %u)\n", i, 0, error);
-    //            if (error == TOX_ERR_FRIEND_CUSTOM_PACKET_TOO_LONG)
-    //                printf("Too long\n");
-    //        }
-    //    }
-    //
-    //    if(i == 0) i = 2;
-    //    else i = i * 2;
-    //
-    //    for(j = 0; j < i; j++)
-    //    {
-    //        printf("Locking...\n");            
-    //        pthread_mutex_lock(&tox_iterate_mutex);
-    //        printf("Got lock, iterate...\n");            
-    //        tox_iterate(tox, NULL);
-    //        pthread_mutex_unlock(&tox_iterate_mutex);  
-    //        printf("Lock released...\n");
-    //        long long time = tox_iteration_interval(tox) * 1000000L;
-    //        nanosleep((const struct timespec[]){{0, time}}, NULL);              
-    //        usleep(j * 10000);
-    //    }
-    //}
-    //
-    //free(temp);
-    //
-    //if(rv == true)
-    //{
-    //    // printf("Packet succeeded at try %d\n", try);
-    //} else {
-    //    printf("Packet failed!\n");
-    //}
 }
 
 void friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, const uint8_t *message, size_t length, void *user_data)
@@ -782,7 +669,7 @@ void friend_message(Tox *tox, uint32_t friend_number, TOX_MESSAGE_TYPE type, con
 		tox_friend_send_message (tox, friend_number, TOX_MESSAGE_TYPE_NORMAL, message, length, NULL);
 		
 		/* Send usage instructions in new message. */
-		static const char *help_msg = "EchoBot commands:\n!info: Show stats.\n!callme: Launch an audio call.\n!videocallme: Launch a video call.";
+		static const char *help_msg = "TestBot commands:\n!info: Show stats.\n!callme: Launch an audio call.\n!videocallme: Launch a video call.";
 		tox_friend_send_message (tox, friend_number, TOX_MESSAGE_TYPE_NORMAL, (uint8_t*) help_msg, strlen (help_msg), NULL);
 	}
 }
@@ -955,7 +842,8 @@ void call_state(ToxAV *toxAV, uint32_t friend_number, uint32_t state, void *user
 
 	bool send_audio = (state & TOXAV_FRIEND_CALL_STATE_SENDING_A) && (state & TOXAV_FRIEND_CALL_STATE_ACCEPTING_A);
 	bool send_video = state & TOXAV_FRIEND_CALL_STATE_SENDING_V && (state & TOXAV_FRIEND_CALL_STATE_ACCEPTING_V);
-	toxav_bit_rate_set(toxAV, friend_number, send_audio ? audio_bitrate : 0, send_video ? video_bitrate : 0, NULL);
+	toxav_audio_set_bit_rate(toxAV, friend_number, send_audio ? audio_bitrate : 0, NULL);
+	toxav_video_set_bit_rate(toxAV, friend_number, send_video ? video_bitrate : 0, NULL);
 
 	printf("Call state for friend %d changed to %d: audio: %d, video: %d\n", friend_number, state, send_audio, send_video);
 }
@@ -964,7 +852,7 @@ void audio_receive_frame(ToxAV *toxAV, uint32_t friend_number, const int16_t *pc
 {
 	TOXAV_ERR_SEND_FRAME err;
 	toxav_audio_send_frame(toxAV, friend_number, pcm, sample_count, channels, sampling_rate, &err);
-    printf("Audio frame\n");
+
 	if (err != TOXAV_ERR_SEND_FRAME_OK) {
 		printf("Could not send audio frame to friend: %d, error: %d\n", friend_number, err);
 	}
@@ -1013,19 +901,18 @@ static void handle_signal(int sig)
 
 static void print_log(Tox *tox, TOX_LOG_LEVEL level, const char *file, uint32_t line, const char *func,const char *message, void *user_data)
 {
-    printf("LOG MESSAGE: func: %s message: %s\n",func, message);
+    if (level >= TOX_LOG_LEVEL_WARNING) printf("LOG MESSAGE: func: %s message: %s\n",func, message);
 }
 
 int main(int argc, char *argv[])
 {
 	signal(SIGINT, handle_signal);
 	start_time = time(NULL);
-    
-    
 
 	TOX_ERR_NEW err = TOX_ERR_NEW_OK;
 	struct Tox_Options options;
 	tox_options_default(&options);
+  tox_options_set_log_callback(&options, print_log);
 
 	if (file_exists(data_filename)) {
 		if (load_profile(&g_tox, &options)) {
@@ -1040,7 +927,7 @@ int main(int argc, char *argv[])
 		g_tox = tox_new(&options, &err);
 		save_profile(g_tox);
 	}
-        tox_options_set_log_callback(&options, print_log);
+
 	tox_callback_self_connection_status(g_tox, self_connection_status);
 	tox_callback_friend_request(g_tox, friend_request);
 	tox_callback_friend_message(g_tox, friend_message);
@@ -1048,10 +935,8 @@ int main(int argc, char *argv[])
 	tox_callback_friend_lossless_packet(g_tox, custom_lossless_friend_message);
 	tox_callback_file_recv(g_tox, file_recv);
 	tox_callback_file_recv_chunk(g_tox, file_recv_chunk);
-    tox_callback_file_recv_control(g_tox,file_recv_control);
-    tox_callback_file_chunk_request(g_tox, file_chunk_request);
-    
-    // tox_callback_log(g_tox, print_log, NULL);
+	tox_callback_file_recv_control(g_tox,file_recv_control);
+	tox_callback_file_chunk_request(g_tox, file_chunk_request);
 
 	if (err != TOX_ERR_NEW_OK) {
 		printf("Error at tox_new, error: %d\n", err);
@@ -1064,8 +949,7 @@ int main(int argc, char *argv[])
 	sodium_bin2hex(address_hex, sizeof(address_hex), address_bin, sizeof(address_bin));
 
 	printf("%s\n", address_hex);
-    
-    printf("At maximum load, echobot will approximately use %d megabytes in memory\n",MAX_TOTAL_TRANSFERS*(MAX_CUSTOM_PACKETS_CACHED_BYTES_PER_USER+MAX_FILE_TRANSFERS_PER_USER*MAX_FILE_TRANSFER_SIZE)/1024);
+  printf("At maximum load, echobot will approximately use %d megabytes in memory\n",MAX_TOTAL_TRANSFERS*(MAX_CUSTOM_PACKETS_CACHED_BYTES_PER_USER+MAX_FILE_TRANSFERS_PER_USER*MAX_FILE_TRANSFER_SIZE)/1024);
 
 	const char *name = "TestBot";
 	const char *status_msg = "Tox audio/video file transfer and custom packet testing service. Send '!info' for stats.";
@@ -1073,12 +957,12 @@ int main(int argc, char *argv[])
 	tox_self_set_name(g_tox, (uint8_t *)name, strlen(name), NULL);
 	tox_self_set_status_message(g_tox, (uint8_t *)status_msg, strlen(status_msg), NULL);
 
-	const char *key_hex = "788236D34978D1D5BD822F0A5BEBD2C53C64CC31CD3149350EE27D4D9A2F9B6B";
+	const char *key_hex = "F404ABAA1C99A9D37D61AB54898F56793E1DEF8BD46B1038B9D822E8460FAB67";
 	uint8_t key_bin[TOX_PUBLIC_KEY_SIZE];
 	sodium_hex2bin(key_bin, sizeof(key_bin), key_hex, strlen(key_hex), NULL, NULL, NULL);
 
 	TOX_ERR_BOOTSTRAP err3;
-	tox_bootstrap(g_tox, "nodes.tox.chat", 33445, key_bin, &err3);
+	tox_bootstrap(g_tox, "node.tox.biribiri.org", 33445, key_bin, &err3);
 	if (err3 != TOX_ERR_BOOTSTRAP_OK) {
 		printf("Could not bootstrap, error: %d\n", err3);
 		return -1;
@@ -1109,8 +993,8 @@ int main(int argc, char *argv[])
 	pthread_cancel(tox_thread);
 	pthread_cancel(toxav_thread);
     
-    friend *elt, *tmp1, *tmp2;
-    CDL_FOREACH_SAFE(data_from_frnds,elt,tmp1,tmp2) {
+	friend *elt, *tmp1, *tmp2;
+	CDL_FOREACH_SAFE(data_from_frnds,elt,tmp1,tmp2) {
         purge_packets(elt);
         purge_file_transfers(elt);
         CDL_DELETE(data_from_frnds,elt);
