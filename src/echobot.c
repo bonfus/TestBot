@@ -131,6 +131,31 @@ void friend_cleanup(Tox *tox)
   }
 }
 
+void clean_file_transfer(file_transfer_t *ft) {
+  if (ft == NULL) return;
+
+  if (ft->file_id) free(ft->file_id);
+
+  if (ft->filename) free(ft->filename);
+
+  if (ft->data) free(ft->data);
+
+  free(ft);
+}
+
+void purge_file_transfers(friend *f) {
+  if (f != NULL) {
+    file_transfer_t *el, *tmp;
+    DL_FOREACH_SAFE(f->file_transfers, el, tmp) {
+      if (el != NULL) {
+        DL_DELETE(f->file_transfers, el);
+        clean_file_transfer(el);
+      }
+    }
+    f->file_transfers = NULL;
+  }
+}
+
 friend* get_friend(uint32_t friend_number, bool create) {
   friend tmp, *elt = NULL;
 
@@ -183,7 +208,10 @@ bool save_profile(Tox *tox)
 }
 
 bool send_packets(Tox *tox, friend *f, TOX_ERR_FRIEND_CUSTOM_PACKET *error) {
-  if (!f) return false; int count;
+  int count;
+
+  if (!f) return false;
+
   packet_t *p;
   DL_COUNT(f->data_packets, p, count);
 
@@ -335,8 +363,10 @@ void send_files(Tox *tox, friend *f, TOX_ERR_FILE_SEND *error) {
                              file_id,
                              &error);
 
-        if (ft->file_id) free(ft->file_id); ft->file_id = file_id;
-        ft->send_started                                = true;
+        if (ft->file_id) free(ft->file_id);
+        /* Update file id info */
+        ft->file_id      = file_id;
+        ft->send_started = true;
       }
 
       if (ft->send_complete) {
@@ -373,31 +403,6 @@ void purge_packets(friend *elt) {
       if (el) free(el);
     }
     elt->data_packets = NULL;
-  }
-}
-
-void clean_file_transfer(file_transfer_t *ft) {
-  if (ft == NULL) return;
-
-  if (ft->file_id) free(ft->file_id);
-
-  if (ft->filename) free(ft->filename);
-
-  if (ft->data) free(ft->data);
-
-  free(ft);
-}
-
-void purge_file_transfers(friend *f) {
-  if (f != NULL) {
-    file_transfer_t *el, *tmp;
-    DL_FOREACH_SAFE(f->file_transfers, el, tmp) {
-      if (el != NULL) {
-        DL_DELETE(f->file_transfers, el);
-        clean_file_transfer(el);
-      }
-    }
-    f->file_transfers = NULL;
   }
 }
 
